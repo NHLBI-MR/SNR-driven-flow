@@ -1,6 +1,5 @@
 {
     "env": {
-    //    "conda_env": "/home/javeda2/mambaforge/envs/gadgetron/"
         "conda_env": "/opt/conda/envs/gadgetron/"
     },
     "configurations": [
@@ -11,7 +10,6 @@
                 "/home/javeda2/mambaforge/envs/gadgetron/**"
             ],
             "defines": [],
-         //   "compilerPath": "/home/javeda2/mambaforge/envs/gadgetron/bin/x86_64-conda-linux-gnu-c99",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "linux-clang-x64",

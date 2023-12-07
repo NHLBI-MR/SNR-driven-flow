@@ -40,7 +40,6 @@ namespace Gadgetron{
     std::vector<cuNDArray<REAL> > dcw_;
     hoNDArray<size_t> shots_per_time_;
     ConvolutionType convolutionType;
-    std::vector<cuNDArray<_reald>> trajectory_;
     bool is_preprocessed_;
   };
   

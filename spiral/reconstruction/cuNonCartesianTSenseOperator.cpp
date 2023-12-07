@@ -1,7 +1,6 @@
 #include "cuNonCartesianTSenseOperator.h"
 #include <gadgetron/vector_td_utilities.h>
 #include <gadgetron/GadgetronTimer.h>
-#include "sense_utilities.h"
 
 using namespace Gadgetron;
 
@@ -52,7 +51,7 @@ void cuNonCartesianTSenseOperator<REAL, D>::mult_M(cuNDArray<complext<REAL>> *in
     // auto timeD = full_dimensions[full_dimensions.size() - 1];
     // auto timeD = full_dimensions[full_dimensions.size() - 1];
     auto dims_orig = full_dimensions.size();
-    for (auto ii = 0; ii < dims_orig - 3; ii++)
+    for (auto ii = 0; ii < dims_orig - D; ii++)
         full_dimensions.pop_back();
     // if (time_dims_2d)
     //     full_dimensions.pop_back();
@@ -71,7 +70,7 @@ void cuNonCartesianTSenseOperator<REAL, D>::mult_M(cuNDArray<complext<REAL>> *in
 
     auto dims_orig2 = slice_dimensions.size();
 
-    for (auto ii = 0; ii < dims_orig2 - 3; ii++)
+    for (auto ii = 0; ii < dims_orig2 - D; ii++)
         slice_dimensions.pop_back(); // remove time
 
     // slice_dimensions.pop_back(); // remove time
@@ -83,86 +82,61 @@ void cuNonCartesianTSenseOperator<REAL, D>::mult_M(cuNDArray<complext<REAL>> *in
     GadgetronTimer timer("Deconstruct");
 
     auto tmpview_dims = full_dimensions;
-    bool failure = false;
 
     for (size_t it = 0; it < shots_per_time_.get_number_of_elements(); it++)
     {
-        GDEBUG_STREAM("IT:" << it);
         auto inter_acc = std::accumulate(shots_per_time_.begin(),
                                          shots_per_time_.begin() + it, size_t(0)); // sum of cum sum shots per time
 
         auto slice_view_in = cuNDArray<complext<REAL>>(slice_dimensions, in->data() + stride * it);
+
+        cuNDArray<complext<REAL>> tmp(&full_dimensions);
+        this->mult_csm(&slice_view_in, &tmp);
 
         data_dimensions.pop_back();                                 // remove interleave
         data_dimensions.push_back(*(shots_per_time_.begin() + it)); // insert correct interleave
         // data_dimensions.push_back(this->ncoils_);       // insert coils again
 
         // cuNDArray<complext<REAL>> tmp_data(&data_dimensions);
-        plan_[0]->preprocess(trajectory_[it], NFFT_prep_mode::C2NC);
-        cuNDArray<complext<REAL>> tmp;
-        cuNDArray<complext<REAL>> tmp_out;
 
+        full_dimensions.pop_back(); // remove ch
         try
         {
-            if (!failure)
-            {
-                tmp.create(&full_dimensions);
-                this->mult_csm(&slice_view_in, &tmp);
+            
+            data_dimensions.push_back(this->ncoils_);       // insert coils again
+            cuNDArray<complext<REAL>> tmp_out(&data_dimensions);
 
-                data_dimensions.push_back(this->ncoils_); // insert coils again
-                tmp_out.create(&data_dimensions);
-                if (accumulate)
-                {
-                    cuNDArray<complext<REAL>> tmp_out2(&data_dimensions);
-                    data_dimensions.pop_back();
-                    plan_[0]->compute(tmp, tmp_out2, &dcw_[it], NFFT_comp_mode::FORWARDS_C2NC);
-                    tmp_out += tmp_out2;
-                }
-                else
-                {
-                    data_dimensions.pop_back();
-                    plan_[0]->compute(tmp, tmp_out, &dcw_[it], NFFT_comp_mode::FORWARDS_C2NC);
-                }
-                for (size_t iCHA = 0; iCHA < this->ncoils_; iCHA++)
-                    cudaMemcpyAsync(out->data() + inter_acc * data_dimensions[0] + stride_data * iCHA, tmp_out.get_data_ptr() + *(shots_per_time_.begin() + it) * data_dimensions[0] * iCHA,
-                                    *(shots_per_time_.begin() + it) * data_dimensions[0] * sizeof(float_complext), cudaMemcpyDefault);
+            if (accumulate)
+            {
+                cuNDArray<complext<REAL>> tmp_out2(&data_dimensions);
+                plan_[it]->compute(tmp, tmp_out2, &dcw_[it], NFFT_comp_mode::FORWARDS_C2NC);
+                tmp_out += tmp_out2;
             }
             else
-               throw 505;
+                plan_[it]->compute(tmp, tmp_out, &dcw_[it], NFFT_comp_mode::FORWARDS_C2NC);
+            
+            data_dimensions.pop_back();
+            
+            for (size_t iCHA = 0; iCHA < this->ncoils_; iCHA++)
+                cudaMemcpyAsync(out->data() + inter_acc * data_dimensions[0] + stride_data * iCHA, tmp_out.get_data_ptr() + *(shots_per_time_.begin() + it) * data_dimensions[0] * iCHA, 
+                *(shots_per_time_.begin() + it) * data_dimensions[0] *sizeof(float_complext),cudaMemcpyDefault);
+
+         //   throw 505;
         }
         catch (...)
         {
-            if (!failure)
-            {
-                tmp.clear();
-                tmp_out.clear();
-                //data_dimensions.pop_back();
-
-            }
-            failure = true;
-
-            full_dimensions.pop_back(); // remove ch
-
             GDEBUG_STREAM("TSENSE - doing channel by channel C2NC");
             for (size_t iCHA = 0; iCHA < this->ncoils_; iCHA++)
             {
-                cuNDArray<complext<REAL>> tmp_view(&full_dimensions);
-                // full_dimensions.push_back(1);
-                auto csm_view = cuNDArray<complext<REAL>>(full_dimensions, this->csm_.get()->data() + stride * iCHA);
-                // full_dimensions.pop_back();
-                tmp_view = slice_view_in;
-                tmp_view *= csm_view;
-                // csm_mult_M<REAL,D>( &slice_view_in, &tmp_view, &csm_view );
-
-                // auto tmp_view = cuNDArray<complext<REAL>>(full_dimensions, tmp.data() + stride * iCHA);
+                auto tmp_view = cuNDArray<complext<REAL>>(full_dimensions, tmp.data() + stride * iCHA);
 
                 auto slice_view_out =
-                    cuNDArray<complext<REAL>>(data_dimensions, out->data() + inter_acc * data_dimensions[0] + stride_data * iCHA);
+                    cuNDArray<complext<REAL>>(data_dimensions, out->data() + inter_acc + stride_data * iCHA);
 
                 if (accumulate)
                 {
                     cuNDArray<complext<REAL>> tmp_out(&full_dimensions);
-                    plan_[0]->compute(tmp_view, tmp_out, &dcw_[it], NFFT_comp_mode::FORWARDS_C2NC);
+                    plan_[it]->compute(tmp_view, tmp_out, &dcw_[it], NFFT_comp_mode::FORWARDS_C2NC);
                     slice_view_out += tmp_out;
                 }
                 else
@@ -170,12 +144,12 @@ void cuNonCartesianTSenseOperator<REAL, D>::mult_M(cuNDArray<complext<REAL>> *in
                 {
 
                     // cuNDArray<complext<REAL>> tmp_new(std::vector<size_t>({1340,1848}));
-                    plan_[0]->compute(tmp_view, slice_view_out, &dcw_[it], NFFT_comp_mode::FORWARDS_C2NC);
+                    plan_[it]->compute(tmp_view, slice_view_out, &dcw_[it], NFFT_comp_mode::FORWARDS_C2NC);
                 }
             }
-            full_dimensions.push_back(this->ncoils_);
         }
 
+        full_dimensions.push_back(this->ncoils_);
         // size_t inter_acc = 0;
         // if (it > 0)
 
@@ -211,21 +185,19 @@ void cuNonCartesianTSenseOperator<REAL, D>::mult_MH(cuNDArray<complext<REAL>> *i
 
     in_dimensions.pop_back(); // Remove CH dimension
 
-    // GDEBUG_STREAM("out_dimensions.size(): " << out_dimensions.size());
-
+    //GDEBUG_STREAM("out_dimensions.size(): " << out_dimensions.size());
     auto dims_orig = (out_dimensions.size());
-
-    // GDEBUG_STREAM("out_dimensions size:" << out_dimensions.size());
-    for (auto ii = 0; ii < dims_orig - 3; ii++)
+    for (auto ii = 0; ii < dims_orig - D; ii++)
     {
-        // GDEBUG_STREAM("out_dimensions.end(): " << out_dimensions[out_dimensions.size() - 1]);
+      //  GDEBUG_STREAM("out_dimensions.end(): " << out_dimensions[out_dimensions.size() - 1]);
         out_dimensions.pop_back();
-        // GDEBUG_STREAM("out_dimensions.end(): " << out_dimensions[out_dimensions.size() - 1]);
     }
-    // GDEBUG_STREAM("out_dimensions.size(): " << out_dimensions.size());
+    //GDEBUG_STREAM("out_dimensions.size(): " << out_dimensions.size());
 
     // out_dimensions.pop_back();               // Remove the timeDimension
-
+    out_dimensions.push_back(this->ncoils_); // add coil dimension
+    cuNDArray<complext<REAL>> tmp(&out_dimensions);
+    out_dimensions.pop_back(); // rm coil dimension
     // cuNDArray<complext<REAL>> tmp_coilCmb(&out_dimensions);
 
     auto stride_ch = std::accumulate(in_dimensions.begin(), in_dimensions.end(), 1,
@@ -238,61 +210,39 @@ void cuNonCartesianTSenseOperator<REAL, D>::mult_MH(cuNDArray<complext<REAL>> *i
         clear(out);
     }
     GadgetronTimer timer("Reconstruct");
-    bool failure = false;
-    // cuNDArray<complext<REAL>> out_view_ch;
+
     for (size_t it = 0; it < shots_per_time_.get_number_of_elements(); it++)
     {
 
-        auto inter_acc = std::accumulate(shots_per_time_.begin(), shots_per_time_.begin() + it, 0);
+        auto inter_acc = std::accumulate(shots_per_time_.begin(), shots_per_time_.begin() + it, 0) ;
         in_dimensions.pop_back(); // Remove INT dimension
         in_dimensions.push_back(*(shots_per_time_.begin() + it));
-
-        cuNDArray<complext<REAL>> tmp;
-
-        cuNDArray<complext<REAL>> out_view_ch(out_dimensions, out->data() + stride_out * it);
-
-        plan_[0]->preprocess(trajectory_[it], NFFT_prep_mode::ALL);
+        // GDEBUG_STREAM("shots_per_time: " << *(shots_per_time_.begin()+it));
         try
         {
-            if (!failure)
-            {
+            auto slice_view = crop<float_complext, 3>(uint64d3(0, inter_acc, 0),
+                                                      uint64d3(RO, *(shots_per_time_.begin() + it), this->ncoils_),
+                                                      *in);
 
-                out_dimensions.push_back(this->ncoils_); // add coil dimension
-                tmp.create(&out_dimensions);
-                out_dimensions.pop_back(); // rm coil dimension
-
-                auto slice_view = crop<float_complext, 3>(uint64d3(0, inter_acc, 0),
-                                                          uint64d3(RO, *(shots_per_time_.begin() + it), this->ncoils_),
-                                                          *in);
-
-                plan_[0]->compute(&slice_view, tmp, &dcw_[it], NFFT_comp_mode::BACKWARDS_NC2C);
-
-                this->mult_csm_conj_sum(&tmp, &out_view_ch);
-            }
-            else
-                throw 505;
+            plan_[it]->compute(slice_view, tmp, &dcw_[it], NFFT_comp_mode::BACKWARDS_NC2C);
+      //      throw 505;
         }
         catch (...)
         {
-            // GDEBUG_STREAM("out_dimensions:" << out_dimensions.size());
-            if (!failure)
-                tmp.clear();
-
-            failure = true;
+            GDEBUG_STREAM("TSENSE - doing channel by channel NC2C");
 
             for (size_t ich = 0; ich < CHA; ich++)
             {
 
-                auto slice_view = cuNDArray<complext<REAL>>(in_dimensions, in->get_data_ptr() + stride_ch * ich + inter_acc * in_dimensions[0]);
-                auto tmpview = cuNDArray<complext<REAL>>(out_dimensions);
+                auto slice_view = cuNDArray<complext<REAL>>(in_dimensions, in->data() + stride_ch * ich + inter_acc * in_dimensions[0]);
+                auto out_view_ch = cuNDArray<complext<REAL>>(out_dimensions, tmp.data() + stride_out * ich);
 
-                plan_[0]->compute(&slice_view, tmpview, &dcw_[it], NFFT_comp_mode::BACKWARDS_NC2C);
-
-                auto csm_view = cuNDArray<complext<REAL>>(out_dimensions, this->csm_.get()->get_data_ptr() + stride_out * ich);
-                tmpview *= *conj(&csm_view);
-                out_view_ch += tmpview;
+                plan_[it]->compute(slice_view, out_view_ch, &dcw_[it], NFFT_comp_mode::BACKWARDS_NC2C);
             }
         }
+        auto slice_view_output = cuNDArray<complext<REAL>>(out_dimensions, out->data() + stride_out * it);
+
+        this->mult_csm_conj_sum(&tmp, &slice_view_output);
     }
 }
 
@@ -317,19 +267,13 @@ void cuNonCartesianTSenseOperator<REAL, D>::preprocess(std::vector<cuNDArray<_re
         throw std::runtime_error("cuNonCartesianSenseOperator::preprocess : operator domain dimensions not set");
     }
     for (auto ii = 0; ii < shots_per_time_.get_number_of_elements(); ii++)
-    {
-        plan_[ii]->preprocess(trajectory[ii], NFFT_prep_mode::NC2C);
-        plan_[ii]->preprocess(trajectory[ii], NFFT_prep_mode::C2NC);
-    }
-    trajectory_ = trajectory;
+        plan_[ii]->preprocess(trajectory[ii], NFFT_prep_mode::ALL);
     is_preprocessed_ = true;
 }
 
 template <class REAL, unsigned int D>
 void cuNonCartesianTSenseOperator<REAL, D>::set_dcw(std::vector<cuNDArray<REAL>> dcw)
 {
-    GDEBUG_STREAM("GPU _4d:" << dcw[0].get_device());
-    
     dcw_ = dcw;
 }
 

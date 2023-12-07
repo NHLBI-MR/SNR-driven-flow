@@ -56,6 +56,15 @@ set(gadgetron_python_gadgets_files python/BinningGadget.py
 python/kaiser_window.py
 python/registration/registration_gadget.py
 python/registration/registration_oflow3D.py
+FeedbackSNR/SegmentationFlowGadget.py 
+FeedbackSNR/SegmentandCalculateFlowGadget.py 
+FeedbackSNR/gadgetron_cmr_segmentation_util.py 
+FeedbackSNR/nnUnet_utils_numpy.py 
+FeedbackSNR/acvl_utils_bounding_boxes.py
+FeedbackSNR/acvl_utils_numpy.py
+FeedbackSNR/sliding_window_prediction_onnx.py 
+FeedbackSNR/SNRExtractionGadget.py
+CardiacBinningGadget.py
 ) 
 
 install(FILES ${gadgetron_python_gadgets_files}

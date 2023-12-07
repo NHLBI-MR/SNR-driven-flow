@@ -29,14 +29,13 @@ public:
     }
     void process(InputChannel<Core::variant<Core::Image<unsigned short>, IsmrmrdImageArray>> &in, OutputChannel &out) override
     {
+
         bool maskflag = false;
         bool SNRflag = false;
         bool condition_stop = false;
         std::vector<Image<unsigned short>> mask_array;
         std::vector<size_t> images_index;
         std::vector<IsmrmrdImageArray> image_array;
-        long lines_rep_stop = 0;
-        long current_lines_rep = 0;
         for (auto message : in)
         {
 
@@ -75,27 +74,11 @@ public:
                 }
 
                 GDEBUG_STREAM( "SNR " << SNR);
-                if (Phantom_lines_stop > 0){
-                    GDEBUG_STREAM( "Push Feedback " << Phantom_lines_stop);
-                    out.push(Gadgetron::FeedbackData{true, Phantom_lines_stop, 0,SNR});
-                    lines_rep_stop = Phantom_lines_stop;
-                } else {
-                    
-                    if (SNR > 0){
-                        current_lines_rep = headerT(0,0,0).user_int[0];
-                        lines_rep_stop = ceil(current_lines_rep*(SNR_stop_criteria*SNR_stop_criteria)/(SNR*SNR));
-                        GDEBUG_STREAM( "Push Feedback predicted " << lines_rep_stop);
-                        out.push(Gadgetron::FeedbackData{true, lines_rep_stop, 0,SNR});
-                    }
-                }
+                out.push(Gadgetron::FeedbackData{true, 0, 0,SNR});
                 
-                
-
                 auto newHeader=headerT(0,0,0);
-                newHeader.user_int[1]=current_lines_rep;
-                newHeader.user_int[2]=lines_rep_stop;
+                newHeader.set = 0;
                 newHeader.user_float[1]=SNR;
-                newHeader.user_float[2]=SNR_stop_criteria;
                 newHeader.user_float[3]=header.user_float[0];
                 newHeader.data_type = ISMRMRD::ISMRMRD_FLOAT;
                 newHeader.image_index = (uint16_t)(4);
@@ -125,8 +108,7 @@ public:
     }
 
 protected:
-NODE_PROPERTY(SNR_stop_criteria, float, "SNR early stop", 8);
-NODE_PROPERTY(Phantom_lines_stop, long, "Force Lines stop to empirical value", 0);
+
 };
 
 GADGETRON_GADGET_EXPORT(ImageSNRExtractionAndFeedback)

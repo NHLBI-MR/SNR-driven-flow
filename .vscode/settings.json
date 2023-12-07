@@ -87,20 +87,11 @@
         "Ninja",
         "Unix Makefiles"
     ],
-    //"cmake.cmakePath": "/opt/conda/envs/gadgetron/bin/cmake",
-   // "cmake.cmakePath": "/home/javeda2/anaconda3/envs/gadgetron/bin/cmake",
-    "cmake.environment": {
-     //   "PATH": "/home/javeda2/anaconda3/envs/gadgetron/bin:/home/javeda2/anaconda3/bin:/home/javeda2/anaconda3/envs/gadgetron/include:/bin:${env:PATH}", ///home/javeda2/local/bin:/home/javeda2/.local/bin:/home/javeda2/local/fsl/bin:/home/javeda2/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/javeda2/local/bin:/home/javeda2/.local/bin:/home/javeda2/local/fsl/bin:/home/javeda2/.vscode-server/bin/dfd34e8260c270da74b5c2d86d61aee4b6d56977/bin/remote-cli:/home/javeda2/.local/bin:/home/javeda2/anaconda3/bin:/home/javeda2/anaconda3/condabin:/usr/local/cuda/bin:/usr/local/MATLAB/R2021a/bin:/home/javeda2/local/bin:/home/javeda2/local/usr/bin:/bin:/bin:/home/javeda2/local/bin:/home/javeda2/local/lib:/home/javeda2/local/include:
-     //   "LD_LIBRARY_PATH": "/home/javeda2/anaconda3/envs/gadgetron/lib/:/home/javeda2/anaconda3/envs/gadgetron/x86_64-conda-linux-gnu/sysroot/usr/lib/"
-    },
+    "cmake.environment": {},
     "cmake.configureSettings": {
         "USE_CUDA": "ON",
         "USE_MKL": "ON",
-        //   "CMAKE_INSTALL_PREFIX": "/opt/conda/envs/gadgetron/"
         "CMAKE_INSTALL_PREFIX": "/opt/package",
-        //   "CMAKE_PREFIX_PATH": "/opt/conda/envs/gadgetron/"
         "CMAKE_PREFIX_PATH": "/opt/package"
-        //"CMAKE_PREFIX_PATH": "/home/javeda2/anaconda3/envs/gadgetron",
-        //"CMAKE_INSTALL_PREFIX": "/home/javeda2/anaconda3/envs/gadgetron"
     },
 }
