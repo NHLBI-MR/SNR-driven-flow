@@ -291,8 +291,6 @@ include_directories(
 install(FILES ${gadgetron_nhlbi_gt_toolbox_header_files} DESTINATION ${GADGETRON_INSTALL_INCLUDE_PATH} COMPONENT main)
 
 add_subdirectory(utils)
-#add_subdirectory(gpuregistration)
-add_subdirectory(python)
 
 #target_link_libraries(nhlbi_gt_toolbox
 #	nhlbi_toolbox_gpureg -lcurand)
