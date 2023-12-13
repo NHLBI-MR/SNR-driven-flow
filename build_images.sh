@@ -18,8 +18,11 @@ rt_name="$base_name:$1_rt"
 echo "image prefix: $rt_name"
 echo "image prefix: $dev_name"
 
+cd ../gadgetron
 
-docker build --build-arg BUILDKIT_INLINE_CACHE=0 --target gadgetron_cudabuild -t gadgetron_cudabuild -f ../gadgetron/Dockerfile ../gadgetron
+docker build --build-arg BUILDKIT_INLINE_CACHE=0 --target gadgetron_cudabuild -t gadgetron_cudabuild -f Dockerfile ../
+
+cd ../SNR-driven-flow
 
 docker build --build-arg BUILDKIT_INLINE_CACHE=0 --target gadgetron_nhlbicudabuild -t gadgetron_dev_nhlbi -f Dockerfile ../
 

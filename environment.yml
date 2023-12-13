@@ -5,6 +5,6 @@ dependencies:
     - cupy-cuda11x
     - scikit-image
     - nibabel
-    - opticalflow3D
+    - mat73
     
     

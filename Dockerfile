@@ -42,7 +42,7 @@ ARG USER_UID
 USER ${USER_UID}
 COPY --from=gadgetron_nhlbicudabuild --chown=$USER_UID:conda /opt/package /opt/conda/envs/gadgetron/
 COPY --from=gadgetron_nhlbicudabuild --chown=$USER_UID:conda /opt/code/gadgetron/docker/entrypoint.sh /opt/
-#COPY --from=gadgetron_nhlbicudabuild --chown=$USER_UID:conda /opt/code/gadgetron/docker/set_matlab_paths.sh /opt/
+COPY --from=gadgetron_nhlbicudabuild --chown=$USER_UID:conda /opt/code/gadgetron/docker/set_matlab_paths.sh /opt/
 RUN chmod +x /opt/entrypoint.sh
 RUN sudo mkdir -p /opt/integration-test && sudo chown ${USER_GID}:${USER_UID} /opt/integration-test
 COPY --from=gadgetron_cudabuild --chown=$USER_UID:conda /opt/code/gadgetron/test/integration /opt/integration-test/
