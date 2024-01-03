@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <version>2</version>
+
+    <readers>
+        <reader>
+            <dll>gadgetron_core_readers</dll>
+            <classname>AcquisitionReader</classname>
+        </reader>
+        <reader>
+            <dll>gadgetron_core_readers</dll>
+            <classname>WaveformReader</classname>
+        </reader>
+        <reader>
+            <dll>gadgetron_core_readers</dll>
+            <classname>FeedbackReader</classname>
+        </reader>
+        <reader>
+            <dll>gadgetron_core_readers</dll>
+            <classname>ImageReader</classname>
+        </reader>
+    </readers>
+
+    <writers>
+        <writer>
+            <dll>gadgetron_core_writers</dll>
+            <classname>ImageWriter</classname>
+        </writer>
+         <writer>
+            <dll>gadgetron_core_writers</dll>
+            <classname>FeedbackWriter</classname>
+        </writer>
+    </writers>
+
+    <stream>
+    <!-- Convert gradient waveforms into trajectories-->
+    <gadget>
+        <name>WaveformToTrajectory</name>
+        <dll>nhlbi_gt_toolbox</dll>
+        <classname>WaveformToTrajectory</classname>
+        <property><name>perform_GIRF</name><value>true</value></property>
+        <property><name>GIRF_folder</name><value>/opt/data/GIRF/</value></property>
+        <property><name>generateTraj</name><value>true</value></property>
+        <property><name>attachWaveform</name><value>false</value></property>
+    </gadget>
+
+    <!-- Noise prewhitening -->
+    <gadget><name>NoiseAdjust</name><dll>gadgetron_mricore</dll><classname>NoiseAdjustGadget</classname></gadget>
+    
+    <gadget>
+        <name>AcquisitionPassthroughTimingGadget</name>
+        <dll>nhlbi_gt_toolbox</dll>
+        <classname>AcquisitionPassthroughTimingGadget</classname>
+        <property><name>timit_limit</name><value>120000</value></property>
+        <property><name>Ping_pong_kz</name><value>false</value></property>
+    </gadget>
+
+    <gadget>
+            <name>RemoveSpiralOversampling</name>
+            <dll>nhlbi_gt_toolbox</dll>
+            <classname>RemoveSpiralOversampling</classname>
+    </gadget>
+
+    <gadget>
+        <name>RemoveNavsGadget</name>
+        <dll>nhlbi_gt_toolbox</dll>
+        <classname>RemoveNavsGadget</classname>
+    </gadget>
+     
+    <gadget>
+        <dll>gadgetron_mricore</dll>
+        <classname>PCACoilGadget</classname>
+    </gadget>
+
+    <gadget>
+        <dll>gadgetron_mricore</dll>
+        <classname>CoilReductionGadget</classname>
+        <property name="coils_out" value="10"/>
+    </gadget>
+
+
+    <gadget>
+        <name>Spiral_3D_SNR</name>
+        <dll>nhlbi_gt_toolbox</dll>
+        <classname>Spiral_3D_SNR</classname>
+        <property><name>numReplicas</name><value>25</value></property>
+    </gadget>
+
+    <external>
+        <execute name="lung_seg" target="SegmentationLung" type="python"/>
+    
+        <configuration>
+            <property name="MaskThreshold"         value='false'/>
+            <property name="Threshold"         value='1'/>        
+        </configuration>
+
+    </external> 
+    
+    <gadget>
+            <name>ImageSNRExtractionAndFeedback</name>
+            <dll>nhlbi_gt_toolbox</dll>
+            <classname>ImageSNRExtractionAndFeedback</classname>
+            <property><name>SNR_stop_criteria</name><value>6</value></property>
+            <property><name>Phantom_lines_stop</name><value>0</value></property>
+    </gadget>        
+
+    <gadget>
+        <name>ImageFinish</name>
+        <dll>gadgetron_mricore</dll>
+        <classname>ImageFinishGadget</classname>
+    </gadget>
+
+    </stream>
+</configuration>

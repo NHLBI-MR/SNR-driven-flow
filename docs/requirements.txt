@@ -1,0 +1,4 @@
+sphinxcontrib-packages
+sphinx-rtd-theme
+numpy
+pyyaml

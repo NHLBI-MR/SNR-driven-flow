@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <version>2</version>
+
+    <readers>
+        <reader>
+            <dll>gadgetron_core_readers</dll>
+            <classname>AcquisitionReader</classname>
+        </reader>
+        <reader>
+            <dll>gadgetron_core_readers</dll>
+            <classname>WaveformReader</classname>
+        </reader>
+        <reader>
+            <dll>gadgetron_core_readers</dll>
+            <classname>FeedbackReader</classname>
+        </reader>
+        <reader>
+            <dll>gadgetron_core_readers</dll>
+            <classname>ImageReader</classname>
+        </reader>
+    </readers>
+
+    <writers>
+        <writer>
+            <dll>gadgetron_core_writers</dll>
+            <classname>ImageWriter</classname>
+        </writer>
+         <writer>
+            <dll>gadgetron_core_writers</dll>
+            <classname>FeedbackWriter</classname>
+        </writer>
+    </writers>
+
+    <stream>
+
+    <!-- Convert gradient waveforms into trajectories -->
+    <gadget>
+        <name>WaveformToTrajectory</name>
+        <dll>nhlbi_gt_toolbox</dll>
+        <classname>WaveformToTrajectory</classname>
+        <property><name>perform_GIRF</name><value>true</value></property>
+        <property><name>GIRF_folder</name><value>/opt/data/GIRF/</value></property>
+        <property><name>generateTraj</name><value>true</value></property>
+        <property><name>attachWaveform</name><value>false</value></property>
+        <property><name>setPre</name><value>false</value></property>
+        <property><name>pre_cutoff_manual</name><value>0</value></property>
+
+    </gadget>
+
+    <!-- Noise prewhitening -->
+    <gadget><name>NoiseAdjust</name><dll>gadgetron_mricore</dll><classname>NoiseAdjustGadget</classname></gadget>
+
+  <gadget>
+    <name>PCA</name>
+    <dll>gadgetron_mricore</dll>
+    <classname>PCACoilGadget</classname>
+  </gadget>
+
+  <gadget>
+    <name>CoilReduction</name>
+    <dll>gadgetron_mricore</dll>
+    <classname>CoilReductionGadget</classname>
+    <property><name>coils_out</name><value>12</value></property>
+  </gadget>
+
+    
+
+
+    <gadget>
+        <name>RemoveNavsGadget</name>
+        <dll>nhlbi_gt_toolbox</dll>
+        <classname>RemoveNavsGadget</classname>
+    </gadget>
+
+    <gadget>
+        <name>RemoveSpiralOversampling</name>
+        <dll>nhlbi_gt_toolbox</dll>
+        <classname>RemoveSpiralOversampling</classname>
+        <property><name>crop_index_st</name><value>19</value></property>
+    </gadget>
+
+    
+    <!-- Parallel Branch -->
+    <!-- Branch Feedback -->
+    <!-- Branch Flow -->
+    <parallel>
+            <branch>
+            <dll>nhlbi_gt_toolbox</dll>
+                <classname>AcquisitionWaveformFanout</classname>
+            </branch>
+            <!-- Branch Feedback -->
+            <stream key="Feedback">
+                <gadget>
+                <name>Spiral2D_feedback</name>
+                <dll>nhlbi_gt_toolbox</dll>
+                <classname>Spiral2D_feedback</classname>
+                <property><name>CSMAlways</name><value>false</value></property>	
+                <property><name>oversampling_factor</name><value>2.1</value></property>
+                <property><name>pseudoReplica</name><value>true</value></property>
+                <property><name>crop_begin</name><value>000</value></property>
+                <property><name>crop_end</name><value>0</value></property>
+                <property><name>reconStride</name><value>20000</value></property> <!-- reconStride in ms controls; when to trigger recon so 3000ms implies every 3s-->
+                </gadget>
+
+                <external>
+                <!--
+                <connect port='2000'/>
+                -->
+                    <execute name="SegmentationFlowGadget" target="SegmentationFlowGadget" type="python"/>
+                
+                    <configuration>
+                        <property name="path_onnx"         value="/opt/data/config_nnUNet/UNet2D_Dataset013_FlowAO_fold1.onnx"/>
+                        <property name="path_info_preprocess"         value="/opt/data/config_nnUNet/info_preprocess.json"/>
+                        <property name="MaskThreshold"         value='false'/>
+                        <property name="Threshold"         value='150'/>
+                        <property name="savenii"         value='false'/>
+                    </configuration>
+                </external> 
+
+                <gadget>
+                <name>ImageSNRExtractionAndFeedback</name>
+                <dll>nhlbi_gt_toolbox</dll>
+                <classname>ImageSNRExtractionAndFeedback</classname>
+                </gadget>
+
+            </stream>
+            <!-- Branch Flow -->
+            <stream key="Flow">
+                <external>
+                <!-- 
+                <connect port='2000'/>
+                -->
+                <execute name="CardiacBinningGadget" target="CardiacBinningGadget" type="python"/>
+
+                <configuration>
+                    <property name="stableBinning"         value="False"/>
+                    <property name="numBins"         value="25"/>
+                    <property name="evenbins"         value="True"/>
+                    <property name="respiRate"         value="100"/>
+                    <property name="version"         value="v2"/>
+                    <property name="phantom"         value="False"/>
+                </configuration>
+                </external> 
+
+
+                <gadget>
+                    <name>ImagetoVector</name>
+                    <dll>nhlbi_gt_toolbox</dll>
+                    <classname>ImagetoVector</classname>
+                </gadget> 
+
+                <gadget>
+                    <name>Spiral2DFlow_CGSense</name>
+                    <dll>nhlbi_gt_toolbox</dll>
+                    <classname>Spiral2DFlow_CGSense</classname>
+                    <property><name>oversampling_factor</name><value>2.1</value></property>
+                    <property><name>lambda</name><value>0.1</value></property>
+                    <property><name>lambdat</name><value>1</value></property>
+                    <property><name>iterationsSense</name><value>10</value></property>
+                    <property><name>writeTmpData</name><value>false</value></property>
+                </gadget>
+                            
+                <gadget>
+                    <name>FlowPhaseSubtractionGadgetBis</name>
+                    <dll>nhlbi_gt_toolbox</dll>
+                    <classname>FlowPhaseSubtractionGadgetBis</classname>
+                </gadget>
+
+                <gadget>
+                    <name>ComplexToFloatAttrib</name>
+                    <dll>gadgetron_mricore</dll>
+                    <classname>ComplexToFloatGadget</classname>
+                </gadget>
+		<external>
+                <!--
+                <connect port='2000'/>
+                -->
+                    <execute name="SegmentandCalculateFlowGadget" target="SegmentAndCalculateFlowGadget" type="python"/>
+                
+                    <configuration>
+                        <property name="path_onnx"         value="/opt/data/config_nnUNet/UNet2D_Dataset013_FlowAO_fold1.onnx"/>
+                        <property name="path_info_preprocess"         value="/opt/data/config_nnUNet/info_preprocess.json"/>
+                        <property name="MaskThreshold"         value='false'/>
+                        <property name="Threshold"         value='100'/>
+                        <property name="savenii"         value='false'/>
+                        <property name="erosion"         value='0'/>
+                    </configuration>
+                </external> 
+                <gadget>
+                    <name>AutoScaleFlow</name>
+                    <dll>nhlbi_gt_toolbox</dll>
+                    <classname>AutoScaleFlow</classname>
+                </gadget>
+            </stream>
+
+            <merge>
+                <dll>gadgetron_core_parallel</dll>
+                <classname>UnorderedMerge</classname>
+            </merge>
+    </parallel>
+
+    <gadget>
+        <name>ImageFinish</name>
+        <dll>gadgetron_mricore</dll>
+        <classname>ImageFinishGadget</classname>
+    </gadget>
+
+</stream>
+</configuration>
