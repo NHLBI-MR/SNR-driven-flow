@@ -2,7 +2,7 @@
 
 if [ $# -lt 2 ]
 then
-    base_name=" gadgetronnhlbi/ubuntu_2004_cuda117_lit"
+    base_name=" gadgetronnhlbi/ubuntu_2004_cuda117_public_snrDrivenFlow"
 else
     if [ $# -eq 2 ]
     then
@@ -11,7 +11,6 @@ else
     fi
 fi
 
-#base_name=" gadgetronnhlbi/ubuntu_2004_cuda117_lit"
 dev_name="$base_name:$1_dev"
 rt_name="$base_name:$1_rt"
 
@@ -28,7 +27,7 @@ docker build --build-arg BUILDKIT_INLINE_CACHE=0 --target gadgetron_nhlbicudabui
 
 docker tag gadgetron_dev_nhlbi ${dev_name}
 
-docker push ${dev_name}
+#docker push ${dev_name}
 
 docker build --build-arg BUILDKIT_INLINE_CACHE=0 --target gadgetron_nhlbi_rt_cuda -t gadgetron_rt_nhlbi -f Dockerfile ../
 

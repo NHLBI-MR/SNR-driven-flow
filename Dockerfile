@@ -46,5 +46,7 @@ COPY --from=gadgetron_nhlbicudabuild --chown=$USER_UID:conda /opt/code/gadgetron
 RUN chmod +x /opt/entrypoint.sh
 RUN sudo mkdir -p /opt/integration-test && sudo chown ${USER_GID}:${USER_UID} /opt/integration-test
 COPY --from=gadgetron_cudabuild --chown=$USER_UID:conda /opt/code/gadgetron/test/integration /opt/integration-test/
+RUN mkdir -p /opt/GIRF
+COPY --chown=$USER_UID:conda SNR-driven-flow/GIRF/ /opt/GIRF/
 
 ENTRYPOINT [ "/tini", "--", "/opt/entrypoint.sh" ]

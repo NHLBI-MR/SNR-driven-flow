@@ -272,10 +272,10 @@ public:
             dims.push_back(sets);
             
             //cuNDArray<float_complext> images_all(dims,selectedDevice);
-            GDEBUG_STREAM("Size 0:" << cuIimages.get_size(0));
-            GDEBUG_STREAM("Size: 1" << cuIimages.get_size(1));
-            GDEBUG_STREAM("Size: 2" << cuIimages.get_size(2));
-            GDEBUG_STREAM("Size: 3" << cuIimages.get_size(3));
+            GDEBUG_STREAM("Size 0: " << cuIimages.get_size(0));
+            GDEBUG_STREAM("Size 1: " << cuIimages.get_size(1));
+            GDEBUG_STREAM("Size 2: " << cuIimages.get_size(2));
+            GDEBUG_STREAM("Size 3: " << cuIimages.get_size(3));
             cuIimages.reshape(dims);   
             using namespace Gadgetron::Indexing;
             IsmrmrdImageArray imarray_sense;

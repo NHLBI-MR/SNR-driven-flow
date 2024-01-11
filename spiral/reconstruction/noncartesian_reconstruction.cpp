@@ -214,8 +214,8 @@ namespace nhlbi_toolbox
 
             struct cudaDeviceProp properties;
             cudaGetDeviceProperties(&properties, data->get_device());
-            GDEBUG_STREAM("device space: " << float(cudaDeviceManager::Instance()->getFreeMemory(data->get_device())) / float(std::pow(1024, 3)));
-            GDEBUG_STREAM("data space: " << float(data->get_number_of_elements() * 4 * 2 * 5) / float(std::pow(1024, 3)));
+            //GDEBUG_STREAM("device space: " << float(cudaDeviceManager::Instance()->getFreeMemory(data->get_device())) / float(std::pow(1024, 3)));
+            //GDEBUG_STREAM("data space: " << float(data->get_number_of_elements() * 4 * 2 * 5) / float(std::pow(1024, 3)));
             if (float(cudaDeviceManager::Instance()->getFreeMemory(data->get_device())) / float(std::pow(1024, 3)) >= float(data->get_number_of_elements() * 4 * 2 * 5) / float(std::pow(1024, 3)))
             {
                 try

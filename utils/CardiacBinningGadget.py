@@ -9,17 +9,13 @@ import cmath
 import math
 import time
 
-import matplotlib.pyplot as plt
 import cupyx.scipy
-import matplotlib as mpl
-mpl.use('Agg')
+
 from scipy.fft import fft,ifft,fftshift,ifftshift
 from cupyx.scipy.fft import fft as cufft
 from cupyx.scipy.fft import ifft as cuifft
 from cupyx.scipy.fft import fftshift as cufftshift
 from cupyx.scipy.fft import ifftshift as cuifftshift
-from cupyx.scipy import ndimage
-from cupy.linalg import svd as cusvd
 
 import kaiser_window
 from BinningGadget import corr2,cufilterData,get_idx_to_send2,create_ismrmrd_image,binning, eprint, butter_highpass_filter
@@ -27,8 +23,6 @@ from scipy.signal import find_peaks
 from itertools import groupby
 from operator import itemgetter
 import scipy
-import os.path as op
-from mat73 import loadmat
 import ismrmrd as mrd
 import calendar
 def _parse_params(xml):
@@ -68,8 +62,6 @@ def estimateCardiacGatingSignal_set(nav_data,nav_tstamp,navangles,kaiserBP=[0.8,
 
     '''
 
-    #data_array = cp.asarray(np.concatenate(nav_data,axis=1))    
-    #data_array= cp.reshape(data_array,(nav_data[0].shape[0],len(nav_data),nav_data[0].shape[1]))
     [number_channels,samples,nav_sample]=nav_data.shape
 
     data_array = cp.abs(cufft(nav_data,axis=2))
@@ -130,7 +122,32 @@ def estimateCardiacGatingSignal_set(nav_data,nav_tstamp,navangles,kaiserBP=[0.8,
     
     return yfilt1, samplingTime/2.5
 
-def estimated_initial_ecgfreq(selectedSig,samplingTime,output_plot_name='',freqwindow=0.025,plotflag=False,smooth=False):
+def estimated_initial_ecgfreq(selectedSig,samplingTime,freqwindow=0.025,smooth=False):
+    """
+    Detecting the initial ecg frequency based on the max of the power of the spectrum.
+
+    Parameters
+    ----------
+    
+    selectedSig : np.ndarray, 
+        NAV/DC signal 
+
+    samplingTime : float, 
+        sampling time 
+
+    freqwindow : float, 
+        float Median filter window (default: 0.025 Hz)
+
+    smooth : boolean, 
+        Flag smooth the spectrum using a median filter with windows define by freqwindow (default: False)
+
+    Returns
+    ------- 
+
+    ecg_freq_initial : np.float64,
+        Initial ecg frequency estimated 
+    
+    """
     fs=1/float(2.5*samplingTime/1000)
     fft_waveform=np.abs(np.fft.fft(np.squeeze(selectedSig)))
     n_samples=cp.shape(selectedSig)[1]
@@ -140,20 +157,47 @@ def estimated_initial_ecgfreq(selectedSig,samplingTime,output_plot_name='',freqw
         fft_waveform_smooth=scipy.ndimage.median_filter(fft_waveform,window_s)
     else:
         fft_waveform_smooth=fft_waveform
-    if plotflag:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.plot(fr[:int(n_samples/2)],fft_waveform[:int(n_samples/2)])
-        ax.plot(fr[:int(n_samples/2)],fft_waveform_smooth[:int(n_samples/2)])
-        ax.set_xlim([0,3.6])
-        fig.savefig(output_plot_name)
-        
-
-
     ecg_freq_initial=fr[np.argmax(fft_waveform_smooth[:int(n_samples/2)])]
 
     return ecg_freq_initial
+
 def cardiacbinning(selectedSig,samplingTime,numBins,ecg_freq,evenbins=False,phantomflag=False,arrythmia_detection=False):
+    """
+    Calculating cardiac bins based on the navigator/DC signal. 
+
+    Parameters
+    ----------
+    
+    selectedSig : np.ndarray, 
+        NAV/DC signal 
+
+    samplingTime : float, 
+        sampling time 
+
+    numBins : int, 
+        number of bins 
+
+    ecg_freq : float, 
+        initial ecg frequency estimated 
+
+    evenbins : boolean, 
+        Flag to obtain uniform bins (default: False)
+
+    phantomflag : boolean, 
+        Flag for phantom data (simplified binning: mod(sample index,numBins)) (default: False)
+
+    arrythmia_detection : boolean, 
+        Remove RR vectors which are too long (>1.5(ecg_freq_initial) (default: False)   
+
+    Returns
+    -------
+
+    bins : List[List], List of binned indexes : 
+        - Length of the list is equal to the number of bins    
+
+    final_ecg_freq : np.float64,
+        ecg frequency estimated 
+    """
     # Selected the maximum in frequency for having a initial guess of cardiac frequency   
     fs=1/float(2.5*samplingTime/1000)
     n_samples=cp.shape(selectedSig)[1]
@@ -161,7 +205,7 @@ def cardiacbinning(selectedSig,samplingTime,numBins,ecg_freq,evenbins=False,phan
     #Minimum distance betwwen peak 
     min_distance=round(0.75* (fs/ecg_freq))
     peaks, _ = find_peaks(selectedSig.flatten(), distance=min_distance)
-    #binnings
+    #Binnings
     bins=[[] for n in range(numBins)]
     final_ecg_freq=ecg_freq
     if phantomflag:
@@ -180,8 +224,6 @@ def cardiacbinning(selectedSig,samplingTime,numBins,ecg_freq,evenbins=False,phan
                 peak_list=[(peak_start,peak_stop,RR_vec) for peak_start,peak_stop,RR_vec in peak_list if RR_vec <1.5*(fs/ecg_freq)]
                 eprint('Arrythmia reject (%)...')
                 eprint(100*(ln_p-len(peak_list))/ln_p)
-                #eprint(np.median(np.array(peak_list),axis=0)[2])
-                #eprint((fs/ecg_freq))
             for peak_start,peak_stop,RR_vec in peak_list:
                 bin_data_label=np.arange(RR_vec)//(RR_vec/numBins)
                 RR_seq=list(map(list, zip(np.arange(peak_start,peak_stop).tolist(), bin_data_label.tolist())))
@@ -202,16 +244,33 @@ def cardiacbinning(selectedSig,samplingTime,numBins,ecg_freq,evenbins=False,phan
  
 def CardiacBinningGadget(connection):
     """
-    Parameters :
-    numBins (int): number of bins (default: 25)
-    phantom (boolean): Flag for phantom data (simplified binning: mod(sample index,numBins)) (default: False)
-    respiRate (int): % of data kept after respiration gating (default: False)
-    evenbins (boolean): Flag to obtain uniform bins (default: 100)
-    version (string): Flag to decide on which signal should be calculated the bins ('v1': raw signal, 'v2': filtered signal around +-0.25Hz ecg initial frequency , default: 'v2')
-    bins_path (string): Matlab cardiac binning path (default: '') (Temporary should be remove in newer version)
-    max_repetition (int): Max repetition accepted for cardiac binning, enable to retro-process acquisition at different instant (default:1000000)
-    plotflag (boolean): Flag to plot and save spectrum used for the detection of the initial ecg frequency (default: False) (To use only for debugging, temporary should be remove in newer version) 
-    arrythmia_detection (boolean): Remove RR vectors which are too long (>1.5(ecg_freq_initial) (default: True) 
+    Parameters
+    ---------- 
+
+    params : dict 
+        Dictionnary that contains the following information :
+                - numBins : int, 
+                    number of bins (default: 25)
+                - phantom : boolean, 
+                    Flag for phantom data (simplified binning: mod(sample index,numBins)) (default: False)
+                - respiRate : int,  
+                    % of data kept after respiration gating (default: 100)
+                - evenbins : boolean, 
+                    Flag to obtain uniform bins (default: False)
+                - version : string, 
+                    Flag to decide on which signal should be calculated the bins ('v1': raw signal, 'v2': filtered signal around +-0.25Hz ecg initial frequency , default: 'v2')
+                - arrythmia_detection : boolean, 
+                    Remove RR vectors which are too long (>1.5(ecg_freq_initial) (default: True)
+                - angularCorr : boolean,
+                    Angular trajectories correction (default=False)  
+
+    Returns
+    -------
+
+    idx_to_send : List[np.ndarray], List of binned indexes : 
+        - Length of the list is equal to the number of bins * sets    
+        - np.ndarray : 1rst element corresponds to the number of indexes of the bin
+    
     """
     eprint("-------------Cardiac Binning-------------")
 
@@ -223,17 +282,13 @@ def CardiacBinningGadget(connection):
             'respiRate':100,
             'evenbins': False,
             'version':'v2',
-            'bins_path': '',
-            'max_repetition': 1000000,
-            'plotflag':False,
             'arrythmia_detection':True,
-            'savemat':False,
-            'angularCorr':True
+            'angularCorr':False
             }
 
-    boolean_keys=['phantom','evenbins','plotflag','arrythmia_detection','savemat','angularCorr']
-    str_keys=['version','bins_path']
-    int_keys=['numBins','respiRate','max_repetition']
+    boolean_keys=['phantom','evenbins','arrythmia_detection','angularCorr']
+    str_keys=['version']
+    int_keys=['numBins','respiRate']
     
     for bkey in boolean_keys:
         if bkey in params_init:
@@ -254,8 +309,7 @@ def CardiacBinningGadget(connection):
     data_indices = []
     kencode_step = []
     mrd_header = connection.header
-    output_plot_name=op.join('/opt/data/gt_data','spectrum_'+mrd_header.measurementInformation.measurementID+'_'+str(params['max_repetition'])+'v1_03'+'.png')
-    
+
     field_of_view = mrd_header.encoding[0].reconSpace.fieldOfView_mm
 
     encoding_limits = mrd_header.encoding[0].encodingLimits
@@ -271,7 +325,6 @@ def CardiacBinningGadget(connection):
     
     acquisition_0 = []
 
-    connection.filter(lambda acq: acq.idx.repetition < params['max_repetition'])
     time0=0
     for acq in connection:
         
@@ -346,43 +399,32 @@ def CardiacBinningGadget(connection):
     cardiac_waveform, samplingTime = estimateCardiacGatingSignal_set(nav_data_copy,nav_tstamp_copy,nav_angles_copy,kaiserBP=[0.6,0.65,2.0,2.1],angularCor=params['angularCorr']) 
     cp.cuda.runtime.deviceSynchronize()
 
-    ecg_freq=estimated_initial_ecgfreq(cardiac_waveform,samplingTime,output_plot_name=output_plot_name,plotflag=params['plotflag'],smooth=True,freqwindow=0.05)
+    ecg_freq=estimated_initial_ecgfreq(cardiac_waveform,samplingTime,smooth=True,freqwindow=0.05)
 
     cardiac_waveform_smooth, samplingTime = estimateCardiacGatingSignal_set(nav_data_copy,nav_tstamp_copy,nav_angles_copy,kaiserBP=[ecg_freq-0.3,ecg_freq-0.25,ecg_freq+0.25,ecg_freq+0.3],angularCor=params['angularCorr']) 
     
-    if op.exists(params['bins_path']):
-        eprint('-------------------Bin Matlab---------------------')
-        bin_matfile=loadmat(params['bins_path'])
-        for nbin in range(len(bin_matfile['dcsg']['bin_data'])):
-            bin=(bin_matfile['dcsg']['bin_data'][nbin]-1).astype(np.int32)
-            bin_sets=(bin_matfile['dcsg']['bin_set'][nbin]-1).astype(np.int32)
-            for set in range(number_of_sets):
-                set_nav_tstamp=bin[bin_sets==set]
-                acceptedTimes[set*params['numBins']+nbin]=nav_tstamp[set_nav_tstamp]
+    
+    if params['version']=='v2':
+        eprint('Version 2')
+        bins_index,ecg_freq_final=cardiacbinning(cardiac_waveform_smooth,samplingTime,params['numBins'],ecg_freq,evenbins=params['evenbins'],phantomflag=params['phantom'],arrythmia_detection=params['arrythmia_detection'])
     else:
-        
-        eprint('-------------------No bin Matlab---------------------')
-        if params['version']=='v2':
-            eprint('Version 2')
-            bins_index,ecg_freq_final=cardiacbinning(cardiac_waveform_smooth,samplingTime,params['numBins'],ecg_freq,evenbins=params['evenbins'],phantomflag=params['phantom'],arrythmia_detection=params['arrythmia_detection'])
-        else:
-            eprint('Version 1')
-            bins_index,ecg_freq_final=cardiacbinning(cardiac_waveform,samplingTime,params['numBins'],ecg_freq,evenbins=params['evenbins'],phantomflag=params['phantom'],arrythmia_detection=params['arrythmia_detection'])
+        eprint('Version 1')
+        bins_index,ecg_freq_final=cardiacbinning(cardiac_waveform,samplingTime,params['numBins'],ecg_freq,evenbins=params['evenbins'],phantomflag=params['phantom'],arrythmia_detection=params['arrythmia_detection'])
 
-        Index=np.arange(nav_tstamp_copy.shape[0])
-        
-        if params['phantom'] or params['respiRate']==100:
-            aRespiTimesIndex=Index
-        else:
-            respiratory_waveform, samplingTime = estimateCardiacGatingSignal_set(nav_data_copy,nav_tstamp_copy,nav_angles_copy,kaiserBP=[0.08,0.1,0.45,0.50]) 
-            aRespiTimes = binning(respiratory_waveform,nav_tstamp_copy.tolist(),params['respiRate'],False, True, False,1)  
-            aRespiTimesIndex=Index[np.in1d(cp.asnumpy(nav_tstamp_copy),aRespiTimes[0])]
-        
-        for nbin in range(len(bins_index)):
-            bin=np.array(bins_index[nbin])
-            for set in range(number_of_sets):
-                set_nav_tstamp=bin[np.in1d(bin,aRespiTimesIndex)]
-                acceptedTimes[set*params['numBins']+nbin]=nav_tstamp[set_nav_tstamp*2+set]
+    Index=np.arange(nav_tstamp_copy.shape[0])
+    
+    if params['phantom'] or params['respiRate']==100:
+        aRespiTimesIndex=Index
+    else:
+        respiratory_waveform, samplingTime = estimateCardiacGatingSignal_set(nav_data_copy,nav_tstamp_copy,nav_angles_copy,kaiserBP=[0.08,0.1,0.45,0.50]) 
+        aRespiTimes = binning(respiratory_waveform,nav_tstamp_copy.tolist(),params['respiRate'],False, True, False,1)  
+        aRespiTimesIndex=Index[np.in1d(cp.asnumpy(nav_tstamp_copy),aRespiTimes[0])]
+    
+    for nbin in range(len(bins_index)):
+        bin=np.array(bins_index[nbin])
+        for set in range(number_of_sets):
+            set_nav_tstamp=bin[np.in1d(bin,aRespiTimesIndex)]
+            acceptedTimes[set*params['numBins']+nbin]=nav_tstamp[set_nav_tstamp*2+set]
 
     
     idx_to_send = []
@@ -406,11 +448,6 @@ def CardiacBinningGadget(connection):
     
     #Add cardiac time (1/ecg_freq/num_bins*1000) micros
     tframes=(1/ecg_freq_final/params['numBins'])*1000*1000
-
-    if params['savemat']:
-        acceptedTimes2=[cp.asnumpy(atime) for atime in acceptedTimes]
-        mat_dict={'idx_to_send':idx_to_send,'ecg_bis':0,'bins':bins_index,'acceptedTimes':acceptedTimes2,'ecg_freq':ecg_freq_final,'tframes':tframes,'cardiac_waveform':cardiac_waveform,'cardiac_waveform_smooth':cardiac_waveform_smooth, 'samplingTime':samplingTime}
-        scipy.io.savemat('/opt/data/gt_data/bin_GT_cardiac_{}.mat'.format(calendar.timegm(time.gmtime())),mat_dict)
 
     data = np.zeros((imageSize*imageSize))
     data[0:2]=[1,tframes]
