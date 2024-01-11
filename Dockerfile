@@ -49,4 +49,8 @@ COPY --from=gadgetron_cudabuild --chown=$USER_UID:conda /opt/code/gadgetron/test
 RUN mkdir -p /opt/GIRF
 COPY --chown=$USER_UID:conda SNR-driven-flow/GIRF/ /opt/GIRF/
 
+#RUN mkdir -p /opt/config_nnUNet
+#COPY --chown=$USER_UID:conda config_nnUNet/ /opt/config_nnUNet/
+
+
 ENTRYPOINT [ "/tini", "--", "/opt/entrypoint.sh" ]

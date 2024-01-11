@@ -106,8 +106,8 @@
                     <execute name="SegmentationFlowGadget" target="SegmentationFlowGadget" type="python"/>
                 
                     <configuration>
-                        <property name="path_onnx"         value="/opt/data/config_nnUNet/UNet2D_Dataset013_FlowAO_fold1.onnx"/>
-                        <property name="path_info_preprocess"         value="/opt/data/config_nnUNet/info_preprocess.json"/>
+                        <property name="path_onnx"         value="/opt/config_nnUNet/UNet2D_Dataset013_FlowAO_best_fold1.onnx"/>
+                        <property name="path_info_preprocess"         value="/opt/config_nnUNet/info_preprocess_AO.json"/>
                     </configuration>
                 </external> 
 
@@ -168,8 +168,8 @@
                     <execute name="SegmentandCalculateFlowGadget" target="SegmentAndCalculateFlowGadget" type="python"/>
                 
                     <configuration>
-                        <property name="path_onnx"         value="/opt/data/config_nnUNet/UNet2D_Dataset013_FlowAO_fold1.onnx"/>
-                        <property name="path_info_preprocess"         value="/opt/data/config_nnUNet/info_preprocess.json"/>
+                        <property name="path_onnx"         value="/opt/config_nnUNet/UNet2D_Dataset013_FlowAO_best_fold1.onnx"/>
+                        <property name="path_info_preprocess"         value="/opt/config_nnUNet/info_preprocess_AO.json"/>
                     </configuration>
                 </external> 
                 <gadget>
