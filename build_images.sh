@@ -2,7 +2,7 @@
 
 if [ $# -lt 2 ]
 then
-    base_name=" gadgetronnhlbi/ubuntu_2004_cuda117_public_snrDrivenFlow"
+    base_name=" gadgetronnhlbi/ubuntu_2004_cuda117_public_snrdrivenflow"
 else
     if [ $# -eq 2 ]
     then
