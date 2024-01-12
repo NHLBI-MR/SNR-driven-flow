@@ -40,7 +40,7 @@ This image can be deployed with:
 
 .. code-block:: console
 
-    docker run --gpus all  --name=deploy_rt -ti -p 9063:9002 --volume=[LOCAL_DATA_FOLDER]:/opt/data --restart unless-stopped --detach gadgetronnhlbi/ubuntu_2004_cuda117_public_snrDrivenFlow:built_rt`
+    docker run --gpus all  --name=deploy_rt -ti -p 9063:9002 --volume=[LOCAL_DATA_FOLDER]:/opt/data --restart unless-stopped --detach gadgetronnhlbi/ubuntu_2004_cuda117_public_snrdrivenflow:built_rt`
 
 where **LOCAL_DATA_FOLDER** is the path to a folder containing raw data that can be used for testing the reconstruction. 
 
