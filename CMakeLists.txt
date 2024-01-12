@@ -209,6 +209,10 @@ set( gadgetron_nhlbi_gt_toolbox_header_files
     spiral/vds.h
 	spiral/TrajectoryParameters.h
 	utils/gadgets/SpiralBufferFanout.h
+    Feedback/readers/FeedbackReader.h
+    Feedback/writers/FeedbackWriter.h
+    Feedback/FeedbackData.h
+    Feedback/MessageID.h
 )
    
 set( gadgetron_nhlbi_gt_toolbox_src_files
@@ -230,6 +234,11 @@ set( gadgetron_nhlbi_gt_toolbox_src_files
 	utils/FlowPhaseSubstractionGadgetBis.cpp
     non_cartesian/Spiral2DFlow_CGSense.cpp
     non_cartesian/Spiral2D_feedback.cpp
+    Feedback/readers/FeedbackReader.cpp
+    Feedback/writers/FeedbackWriter.cpp
+    Feedback/writers/FeedbackWriter.cpp
+    Feedback/gadgetron_ismrmrd_client_feedback/gadgetron_ismrmrd_client_feedback.cpp
+
 )
 
 
@@ -286,6 +295,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/utils/motionCorrection/
 )
 # endif()
+
 install(FILES ${gadgetron_nhlbi_gt_toolbox_header_files} DESTINATION ${GADGETRON_INSTALL_INCLUDE_PATH} COMPONENT main)
 
 add_subdirectory(utils)
@@ -412,3 +422,17 @@ install(TARGETS nhlbi_gt_toolbox
 	RUNTIME DESTINATION bin
 	COMPONENT main
 )
+
+
+
+
+add_executable(gadgetron_ismrmrd_client_feedback Feedback/gadgetron_ismrmrd_client_feedback/gadgetron_ismrmrd_client_feedback.cpp)
+include_directories(${HDF5_INCLUDE_DIRS})
+target_link_libraries(gadgetron_ismrmrd_client_feedback ISMRMRD::ISMRMRD Boost::program_options gadgetron_mricore nhlbi_gt_toolbox)
+
+if (ZFP_FOUND)
+   target_link_libraries(gadgetron_ismrmrd_client_feedback ${ZFP_LIBRARIES})
+endif ()
+
+install(TARGETS gadgetron_ismrmrd_client_feedback DESTINATION bin COMPONENT main)
+

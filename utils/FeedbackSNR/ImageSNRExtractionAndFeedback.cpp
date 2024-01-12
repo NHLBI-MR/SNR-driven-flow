@@ -12,7 +12,7 @@
 #include <gadgetron/Types.h>
 #include <gadgetron/GadgetMRIHeaders.h>
 #include <gadgetron/GadgetronTimer.h>
-#include <gadgetron/FeedbackData.h>
+#include "../../Feedback/FeedbackData.h"
 #include "../../utils/gpu/cuda_utils.h"
 #include <util_functions.h>
 #include <gadgetron/ImageArraySendMixin.h>

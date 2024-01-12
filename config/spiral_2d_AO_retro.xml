@@ -12,7 +12,7 @@
             <classname>WaveformReader</classname>
         </reader>
         <reader>
-            <dll>gadgetron_core_readers</dll>
+            <dll>nhlbi_gt_toolbox</dll>
             <classname>FeedbackReader</classname>
         </reader>
         <reader>
@@ -27,7 +27,7 @@
             <classname>ImageWriter</classname>
         </writer>
          <writer>
-            <dll>gadgetron_core_writers</dll>
+            <dll>nhlbi_gt_toolbox</dll>
             <classname>FeedbackWriter</classname>
         </writer>
     </writers>

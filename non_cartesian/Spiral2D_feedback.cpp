@@ -45,7 +45,7 @@
 #include <gadgetron/hoNDArray_utils.h>
 #include <gadgetron/hoCgSolver.h>
 #include <gadgetron/hoNDImage_util.h>
-#include <gadgetron/FeedbackData.h>
+#include "../Feedback/FeedbackData.h"
 
 #include "../spiral/SpiralBuffer.h"
 #include "../utils/gpu/cuda_utils.h"
