@@ -45,7 +45,7 @@
 #include <gadgetron/hoNDArray_utils.h>
 #include <gadgetron/hoCgSolver.h>
 #include <gadgetron/hoNDImage_util.h>
-#include <gadgetron/FeedbackData.h>
+#include "../Feedback/FeedbackData.h"
 
 #include "../spiral/SpiralBuffer.h"
 #include "../utils/gpu/cuda_utils.h"
@@ -73,7 +73,6 @@ public:
     float oversampling_factor_;
     float kernel_width_;
     bool verbose;
-    bool csm_calculated_ = false;
 
     boost::shared_ptr<cuNDArray<float_complext>> csm_;
 
@@ -89,51 +88,19 @@ public:
     {
 
         int selectedDevice = nhlbi_toolbox::utils::selectCudaDevice();
-        auto matrixSize = this->header.encoding.front().reconSpace.matrixSize;
-        auto fov = this->header.encoding.front().encodedSpace.fieldOfView_mm;
-        auto resx = fov.x / float(matrixSize.x);
-        auto resy = fov.y / float(matrixSize.y);
-        auto resz = fov.z / float(matrixSize.z);
         unsigned int warp_size = cudaDeviceManager::Instance()->warp_size();
         size_t RO, E1, E2, CHA, N, S, SLC;
         nhlbi_toolbox::utils::enable_peeraccess();
-        // boost::shared_ptr<cuNDArray<float_complext>> cuData;
-        // boost::shared_ptr<hoNDArray<float_complext>> hoData;
 
-        hoNDArray<float> trajectories;
-
-        std::tuple<boost::shared_ptr<hoNDArray<floatd3>>,
-                   boost::shared_ptr<hoNDArray<float>>>
-            traj_dcw;
-        IsmrmrdDataBuffered *buffer;
-        IsmrmrdImageArray imarray;
         ISMRMRD::AcquisitionHeader acqhdr;
-        std::vector<size_t> recon_dims;
-        std::vector<size_t> recon_dims_reconSpace;
-        std::vector<size_t> recon_dims_encodSpace;
-        hoNDArray<size_t> shots_per_time;
         boost::shared_ptr<cuNDArray<float_complext>> csm;
-        hoNDArray<floatd3> gradients;
 
         Gadgetron::reconParams recon_params;
-
-        // Declare vectors for temporalTV
-        std::vector<hoNDArray<float_complext>> dataVector;
-        std::vector<hoNDArray<float>> dcwVector;
-        std::vector<hoNDArray<floatd3>> trajVector;
-        std::vector<cuNDArray<float>> sctVector;
-        boost::shared_ptr<cuNDArray<float_complext>> cweights;
-        arma::fvec freq_bins;
-
-        auto kspace_scaling = 1e-3 * fov.x / matrixSize.x;
 
         auto idx = 0;
 
         size_t acq_count = 0;
-        bool csmSent = false;
 
-        bool weightsEstimated = false;
-        auto maxZencode = header.encoding.front().encodingLimits.kspace_encoding_step_2.get().maximum + 1;
         auto maxAcq = ((header.encoding.at(0).encodingLimits.kspace_encoding_step_1.get().maximum + 1) *
                        (header.encoding[0].encodingLimits.kspace_encoding_step_2.get().maximum + 1) *
                        (header.encoding[0].encodingLimits.average.get().maximum + 1) *
@@ -143,11 +110,6 @@ public:
         GDEBUG_STREAM("maxAcq:  " << maxAcq);
         GDEBUG_STREAM("(header.encoding[0].encodingLimits.set.get().maximum + 1): " << (header.encoding[0].encodingLimits.set.get().maximum + 1));
 
-        // GDEBUG_STREAM("kspace1: " << (header.encoding.at(0).encodingLimits.kspace_encoding_step_1.get().maximum + 1));
-        // GDEBUG_STREAM("kspace2: " << (header.encoding.at(0).encodingLimits.kspace_encoding_step_2.get().maximum + 1));
-        // GDEBUG_STREAM("avgs: " << (header.encoding[0].encodingLimits.average.get().maximum + 1));
-        // GDEBUG_STREAM("reps: " << (header.encoding[0].encodingLimits.repetition.get().maximum + 1));
-        // GDEBUG_STREAM("phases: " << (header.encoding[0].encodingLimits.phase.get().maximum + 1));
         std::vector<Core::Acquisition> allAcq(maxAcq);
         std::vector<ISMRMRD::AcquisitionHeader> headers(maxAcq);
         uint32_t startTime=0;
@@ -168,10 +130,7 @@ public:
             auto time = float(head.acquisition_time_stamp-startTime)*2.5; // ms
             auto time_acq= float(head.acquisition_time_stamp-startTime_real)*2.5; // ms
 
-            /* time_acq <=maxTiming : A user stopping criteria based on the total acquisition time has been added in order to have an early stop on some acquisition data that can't be process entirely due to memory overflow. 
-            It is a temporary solution to process retrospective data. It should be remove when the project is over or modify with a more thoroughly solution (estimation of the maximum of acquisition possible before memory overflow).
-            */
-            if ((((int(time/reconStride)>0 && head.isFlagSet(ISMRMRD::ISMRMRD_ACQ_LAST_IN_SLICE)) || head.isFlagSet(ISMRMRD::ISMRMRD_ACQ_LAST_IN_MEASUREMENT)) && idx>crop_begin) && (time_acq <=maxTiming))
+            if ((((int(time/reconStride)>0 && head.isFlagSet(ISMRMRD::ISMRMRD_ACQ_LAST_IN_SLICE)) || head.isFlagSet(ISMRMRD::ISMRMRD_ACQ_LAST_IN_MEASUREMENT)) && idx>crop_begin))
             {
                 
                 GDEBUG_STREAM("Time since last recon (ms) : " << time);
@@ -243,16 +202,11 @@ public:
     }
 
 protected:
-    NODE_PROPERTY(CSMAlways, bool, "CSMAlways", false);
     NODE_PROPERTY(oversampling_factor, float, "oversampling_factor", 2.1);
-
-    NODE_PROPERTY(pseudoReplica, bool,"pseudoReplica", false);
     NODE_PROPERTY(crop_begin, size_t, "crop_begin", 0);
     NODE_PROPERTY(crop_end, size_t, "crop_end", 0);
-    NODE_PROPERTY(bufferStart, size_t, "bufferStart", 100);
-    NODE_PROPERTY(reconStride, size_t, "reconStride in ms", 3000);
+    NODE_PROPERTY(reconStride, size_t, "reconStride in ms", 20000);
     NODE_PROPERTY(numReplicas, size_t, "numReplicas", 100);
-    NODE_PROPERTY(maxTiming, int, "Maximum acquisition Time in order to avoid memory overflow in ms", 3000000);
     int series_counter = 0;
 };
 

@@ -209,6 +209,10 @@ set( gadgetron_nhlbi_gt_toolbox_header_files
     spiral/vds.h
 	spiral/TrajectoryParameters.h
 	utils/gadgets/SpiralBufferFanout.h
+    Feedback/readers/FeedbackReader.h
+    Feedback/writers/FeedbackWriter.h
+    Feedback/FeedbackData.h
+    Feedback/MessageID.h
 )
    
 set( gadgetron_nhlbi_gt_toolbox_src_files
@@ -224,20 +228,23 @@ set( gadgetron_nhlbi_gt_toolbox_src_files
 	utils/gadgets/SpiralBufferFanout.cpp
 	utils/gadgets/removeNavAcq.cpp
 	utils/gadgets/ImagetoVector.cpp
-    non_cartesian/Spiral_3D_SNR.cpp
     utils/FeedbackSNR/ImageSNRExtractionAndFeedback.cpp	
     utils/FeedbackSNR/AcquisitionPassthroughTimingGadget.cpp
-    utils/FeedbackSNR/AcquisitionPassthroughSpiralShotsGadget.cpp
     utils/AutoScaleFlow.cpp
 	utils/FlowPhaseSubstractionGadgetBis.cpp
     non_cartesian/Spiral2DFlow_CGSense.cpp
     non_cartesian/Spiral2D_feedback.cpp
+    Feedback/readers/FeedbackReader.cpp
+    Feedback/writers/FeedbackWriter.cpp
+    Feedback/writers/FeedbackWriter.cpp
+    Feedback/gadgetron_ismrmrd_client_feedback/gadgetron_ismrmrd_client_feedback.cpp
+
 )
 
 
 set( gadgetron_nhlbi_gt_toolbox_config_files
-    config/pseudo_replica_ute.xml
     config/spiral_2d_AO.xml
+    config/spiral_2d_AO_retro.xml
  )
 
 add_library(nhlbi_gt_toolbox SHARED  
@@ -288,6 +295,7 @@ include_directories(
 	${CMAKE_SOURCE_DIR}/utils/motionCorrection/
 )
 # endif()
+
 install(FILES ${gadgetron_nhlbi_gt_toolbox_header_files} DESTINATION ${GADGETRON_INSTALL_INCLUDE_PATH} COMPONENT main)
 
 add_subdirectory(utils)
@@ -305,7 +313,6 @@ spiral/reconstruction/noncartesian_reconstruction.h
 spiral/reconstruction/reconParams.h
 spiral/reconstruction/SpiralReconBuffer.h
 spiral/reconstruction/cuNonCartesianTSenseOperator.h
-spiral/reconstruction/cuNonCartesianMOCOOperator.h
 spiral/reconstruction/noncartesian_reconstruction_pseudo_replica.h
 spiral/reconstruction/gpBbSolver.h
 spiral/reconstruction/cuGpBbSolver.h
@@ -316,7 +323,6 @@ set( gadgetron_nhlbi_gpu_recon_src_files
 spiral/reconstruction/densityCompensation.cpp 
 spiral/reconstruction/noncartesian_reconstruction.cpp
 spiral/reconstruction/cuNonCartesianTSenseOperator.cpp
-spiral/reconstruction/cuNonCartesianMOCOOperator.cu
 spiral/reconstruction/noncartesian_reconstruction_pseudo_replica.cpp
 spiral/reconstruction/noncartesian_reconstruction_2Dtimes.cpp
 )
@@ -416,3 +422,17 @@ install(TARGETS nhlbi_gt_toolbox
 	RUNTIME DESTINATION bin
 	COMPONENT main
 )
+
+
+
+
+add_executable(gadgetron_ismrmrd_client_feedback Feedback/gadgetron_ismrmrd_client_feedback/gadgetron_ismrmrd_client_feedback.cpp)
+include_directories(${HDF5_INCLUDE_DIRS})
+target_link_libraries(gadgetron_ismrmrd_client_feedback ISMRMRD::ISMRMRD Boost::program_options gadgetron_mricore nhlbi_gt_toolbox)
+
+if (ZFP_FOUND)
+   target_link_libraries(gadgetron_ismrmrd_client_feedback ${ZFP_LIBRARIES})
+endif ()
+
+install(TARGETS gadgetron_ismrmrd_client_feedback DESTINATION bin COMPONENT main)
+

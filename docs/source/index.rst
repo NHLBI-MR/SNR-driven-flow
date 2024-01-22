@@ -3,7 +3,8 @@ Welcome to SNR-driven-flow project's documentation!
 
 
 What is SNR-driven-flow project ?
-********************
+*********************************
+
 This project is a Gadgetron extension that provides an inline automatic quality control for adaptive subject-specific MRI acquisition time based on a pre-determined image quality metric, illustrated on 2D phase contrast MR flow measurements in the heart with an SNR-driven stop criterion.
 
 
@@ -13,17 +14,14 @@ This project is a Gadgetron extension that provides an inline automatic quality 
    :caption: Contents:
    
    installation
-   howdoesitwork
-   apidoc
-   
- 
+
 
 Publication
 ***********
 This open-source toolbox is described in the following abstract :
 
-- Daudé P., Ramasawmy R., Javed A., Lederman R.J., Chow K., Campbell-Washburn A.E. Inline automatic quality control of 2D phase-contrast flow MR imaging for subject-specific scan time adaptation
-. Under revision
+- Daudé P., Ramasawmy R., Javed A., Lederman R.J., Chow K., Campbell-Washburn A.E. Inline automatic quality control of 2D phase-contrast flow MR imaging for subject-specific scan time adaptation (Under revision)
+
 
 License
 *******

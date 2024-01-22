@@ -5,6 +5,5 @@ dependencies:
     - cupy-cuda11x
     - scikit-image
     - nibabel
-    - mat73
     
     

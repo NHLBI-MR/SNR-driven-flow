@@ -51,20 +51,25 @@
     <!-- Noise prewhitening -->
     <gadget><name>NoiseAdjust</name><dll>gadgetron_mricore</dll><classname>NoiseAdjustGadget</classname></gadget>
 
-  <gadget>
+    <gadget>
+        <name>AcquisitionPassthroughTimingGadget</name>
+        <dll>nhlbi_gt_toolbox</dll>
+        <classname>AcquisitionPassthroughTimingGadget</classname>
+        <property><name>timit_limit</name><value>60000</value></property>
+    </gadget>
+
+    <gadget>
     <name>PCA</name>
     <dll>gadgetron_mricore</dll>
     <classname>PCACoilGadget</classname>
-  </gadget>
+    </gadget>
 
-  <gadget>
+    <gadget>
     <name>CoilReduction</name>
     <dll>gadgetron_mricore</dll>
     <classname>CoilReductionGadget</classname>
     <property><name>coils_out</name><value>12</value></property>
-  </gadget>
-
-    
+    </gadget>
 
 
     <gadget>
