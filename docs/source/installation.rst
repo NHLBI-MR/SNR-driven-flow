@@ -1,6 +1,15 @@
 Installation instructions
 =========================
 
+Hardware and software requirements
+----------------------------------
+* Gadgetron-python version 1.4.1
+* Gadgetron version 4.5.1
+* Tested on  GPUs : NVIDIA A100-SXM (80Gb), NVIDIA Quadro RTX 8000 (50Gb) 
+
+Installation
+------------
+
 We recommend to different ways of obtaining and running this project : using a conda environment and build it or using Docker container
 
 Installing in conda environment
@@ -51,7 +60,7 @@ Once the docker container is running, you can start a bash terminal inside the c
 
 .. code-block:: console
 
-    docker exec -ti deplot_rt bash 
+    docker exec -ti deploy_rt bash 
 
 and you can simply ou can simply navigate to `/opt/data/` and test the code :
 
@@ -86,3 +95,180 @@ Dataset
 -------
 
 The test data can be downloaded from zenodo: 10.5281/zenodo.10525047
+
+
+Test dataset output
+-------------------
+
+.. code-block:: console
+
+	gadgetron_ismrmrd_client_feedback -p 9002 -f AO_spiral_flow_pd_s32_vds100_FA25_smax40_noBF_206026_30000023100310273443400000003_30000023100310273443400000003_58_20231020-151547.h5 -c spiral_2d_AO.xml -o OUTPUT_FILENAME.h5
+	Gadgetron ISMRMRD client
+	  -- host            :      localhost
+	  -- port            :      9002
+	  -- hdf5 file  in   :      AO_spiral_flow_pd_s32_vds100_FA25_smax40_noBF_206026_30000023100310273443400000003_30000023100310273443400000003_58_20231020-151547.h5
+	  -- hdf5 group in   :      /dataset
+	  -- conf            :      spiral_2d_AO.xml
+	  -- loop            :      1
+	  -- hdf5 file out   :      OUTPUT_FILENAME.h5
+	  -- hdf5 group out  :      2024-02-29 21:55:51
+	This measurement has dependent measurements
+	  SenMap : 206026_30000023100310273443400000003_30000023100310273443400000003_49
+	  Noise : 206026_30000023100310273443400000003_30000023100310273443400000003_49
+	Querying the Gadgetron instance for the dependent measurement: 206026_30000023100310273443400000003_30000023100310273443400000003_49
+	Message received with ID: 1019
+	WARNING: Dependent noise measurement not found on Gadgetron server. Was the noise data processed?
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 58.9305
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 83.1711
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 101.61
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 118.086
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 132.117
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 145.143
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 155.582
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 166
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 177.593
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 185.791
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 194.667
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 204.155
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 211.391
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 218.067
+	Message received with ID: 1022
+	Message received with ID: 1022
+	Message received with ID: 1028
+	size_str: 11
+	Message: 0x7fcac3be5d10
+	size_data: 21
+	Feedback mybool: 1
+	Feedback myint: 0
+	Feedback myint2: 0
+	Feedback myfloat: 221.655
+	Message received with ID: 1022
+	Message received with ID: 1022
+	

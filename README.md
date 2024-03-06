@@ -7,7 +7,7 @@ This project is a Gadgetron extension that provides an inline automatic quality 
 This open-source is described in :
 
 - Daudé P., Ramasawmy R., Javed A., Lederman R.J., Chow K., Campbell-Washburn A.E. Inline automatic quality control of 2D phase-contrast flow MR imaging for subject-specific scan time adaptation
-. In preparation
+. Magn Reson Med. 2024; `10.1002/mrm.30083  <https://doi.org/10.1002/mrm.30083>`_ 
 
 
 ## Installation guidelines
